@@ -4,10 +4,10 @@ plan: 1
 wave: 1
 ---
 
-# Plan 1.1: Prioritization Engine Logic
+# Plan 1.1: Advanced Logic & Error Mapping
 
 ## Objective
-Implement a priority-based analysis engine that ranks issues found in an API response and focuses the UI on the most critical one.
+Enhance the analysis engine to provide more descriptive error explanations and detect method mismatches (405s/404 hints).
 
 ## Context
 - .gsd/SPEC.md
@@ -16,33 +16,32 @@ Implement a priority-based analysis engine that ranks issues found in an API res
 ## Tasks
 
 <task type="auto">
-  <name>Refactor `analyzeResponse` for Priority</name>
+  <name>Implement Enhanced Error Mapping</name>
   <files>d:\Projects\Better-man\script.js</files>
   <action>
-    - Refactor `analyzeResponse` to collect all issues into an array before logging.
-    - Implement the priority hierarchy:
-      1. HTTP Status Errors (4xx/5xx) take absolute priority. If found, skip CORS checks.
-      2. CORS checks (Missing/Mismatch) only run for 2xx responses.
-    - Separate findings into `primaryIssue` and `secondaryNotes`.
-    - Modify the UI update logic to clear the list and show the Primary Issue card prominently.
+    - Update `analyzeResponse` to map specific status codes to descriptive problems:
+      - 404: "Endpoint Not Found (Check Method/URL)"
+      - 401/403: "Authentication or Permission Issue"
+      - 405: "Method Not Allowed"
+    - Add "Method Mismatch" detection: If response is 405 or 404, check the current method. If it's POST/PUT/DELETE, add an insight that "this endpoint might only support GET".
   </action>
-  <verify>Check script.js for conditional CORS logic and itemized priority array handling.</verify>
-  <done>HTTP errors are reported first, and CORS warnings are only analyzed for successful status codes.</done>
+  <verify>Check script.js for extended status code switch/if-else logic.</verify>
+  <done>Statuses 401, 403, 404, and 405 have unique, descriptive problem headers and hints.</done>
 </task>
 
 <task type="auto">
-  <name>Implement "Additional Notes" UI</name>
+  <name>Integrate Contextual "Why" Intelligence</name>
   <files>d:\Projects\Better-man\script.js</files>
   <action>
-    - Update the issues list rendering to support a secondary section if multiple issues are detected.
-    - If `secondaryNotes` exist, render them as smaller, less prominent cards or a dedicated "Additional Observations" block below the primary issue.
-    - Ensure the "No issues detected" state still works correctly.
+    - Refactor the `responseIssues` population to include a `why` field that dynamically references request state (e.g. "Because you used POST on an endpoint that returned 404").
+    - Ensure these insights are correctly passed to `logIssue`.
   </action>
-  <verify>Run a request that might trigger multiple warnings (if any) and see the visual hierarchy.</verify>
-  <done>Multiple issues are displayed with a clear visual distinction between the main problem and secondary notes.</done>
+  <verify>Run a POST request to a typically GET-only URL and check the issue explanation.</verify>
+  <done>Issue cards include a specific reason linked to the user's request configuration.</done>
 </task>
 
 ## Success Criteria
-- [ ] HTTP 4xx/5xx errors suppress CORS analysis to avoid "noise".
-- [ ] CORS issues only appear for successful requests (2xx).
-- [ ] UI clearly highlights the "Most Important" issue found.
+- [ ] 404 errors include a secondary hint about method mismatches.
+- [ ] 401/403 errors correctly identify Auth problems.
+- [ ] 405 errors are explicitly flagged.
+- [ ] Primary issues explain the specific request-context reason.

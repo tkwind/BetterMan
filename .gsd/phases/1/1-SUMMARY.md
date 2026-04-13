@@ -1,17 +1,21 @@
-# Phase 1 Summary: Prioritization Engine Logic
+# Phase 1 Summary: Advanced Logic & Error Mapping
 
 ## Summary
-Successfully refactored the analysis engine to prioritize critical errors and demote environmental warnings to "Additional Notes".
+Successfully implemented smart error mapping, method mismatch detection, and sectioned issue reporting.
 
 ## What Was Executed
 1. **script.js**:
-   - Refactored `analyzeResponse` to collect issues and implement the priority hierarchy.
-   - HTTP Status errors (4xx/5xx) now take absolute priority and suppress CORS analysis.
-   - CORS checks only run for successful (2xx) responses.
-   - Implemented `renderAllIssues` with "Additional Note" styling for secondary problems.
-2. **Verification**: Verified via browser subagent that status errors are prioritized and multiple issues are correctly separated into "Primary" and "Secondary" visual tiers.
+   - Refactored `analyzeResponse` to prioritize 404, 405, and 401/403 status codes.
+   - Added `currentMethod` awareness to 404/405 logic to detect likely mismatches.
+   - Implemented "Retry as GET" action button in the issue card.
+   - Refactored `renderAllIssues` to formalize "Primary Issue" and "Additional Note" section headers.
+2. **Verification**: Verified via browser subagent that:
+   - POST 404s trigger "Retry as GET" button and smart explanation.
+   - Clicking retry switches method and refires request.
+   - Multi-issue result sets are sectioned correctly.
 
 ## Success Guidelines Verified
-- HTTP 4xx/5xx errors suppress CORS analysis.
-- CORS issues only appear for successful requests (2xx).
-- UI clearly highlights the "Most Important" issue.
+- 404 errors include secondary hints about methods.
+- 401/403 correctly identified.
+- 405 explicitly flagged.
+- Primary issues explain request-context reasons.

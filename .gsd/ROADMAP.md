@@ -1,20 +1,21 @@
 # ROADMAP.md
 
-> **Current Milestone**: v0.5 - Intelligent Issue Prioritization
-> **Goal**: Ensure the tool identifies the most relevant issue instead of blindly reporting all possible problems.
+> **Current Milestone**: v0.6 - Multi-Issue Insight + Context Awareness
+> **Goal**: Upgrade the tool to a smarter assistant with layered insights and context-aware explanations.
 
 ## Must-Haves
-- [ ] HTTP error detection takes priority over other checks
-- [ ] CORS detection runs only for successful (2xx) responses
-- [ ] Clear distinction between Errors (Failure) and Warnings (Environmental)
-- [ ] Primary issue focus: show most relevant issue top-level
+- [ ] Support multiple issues: Primary Issue section + Additional Notes section
+- [ ] Implement Method Mismatch detection (e.g. 405 detection or 404 hints)
+- [ ] Detailed HTTP error mapping: 404 (Endpoint/Method), 401/403 (Auth), etc.
+- [ ] Contextual messaging: Explain "WHY" based on request state
+- [ ] Sectioned UI for Issues panel
 
 ## Phases
 
-### Phase 1: Prioritization Engine Logic
+### Phase 1: Advanced Logic & Error Mapping
 **Status**: ✅ Complete
-**Objective**: Refactor `analyzeResponse` to implement the priority hierarchy and show secondary issues as additional notes.
+**Objective**: Implement method mismatch detection and the enhanced descriptive error mapping for status codes.
 
-### Phase 2: Visual & UX Polishing
+### Phase 2: Sectioned UI & Contextual Explainers
 **Status**: ⬜ Not Started
-**Objective**: Improve issue explanation clarity and refine visual severity cues (Red/Yellow).
+**Objective**: Refactor the Issues panel into formal "Primary" and "Additional" sections and add the "Why" explainers.
