@@ -89,9 +89,10 @@ const PostSenseEngine = (() => {
       isPrimary: false
     });
 
-    // Mark First Failure
+    // Assign IDs and Mark First Failure
     let failureFound = false;
-    timeline.forEach(s => {
+    timeline.forEach((s, idx) => {
+      s.id = `step_${idx}`;
       if (!failureFound && s.status === 'failed') {
         s.isFirstFailure = true;
         failureFound = true;
@@ -140,14 +141,11 @@ const PostSenseEngine = (() => {
         }
       }
 
-      // If the step itself represents a terminal failure in the failed timeline
-      if (fStep.status === "failed" && mergedStep.status !== "different") {
-          mergedStep.status = "failed";
-          mergedStep.detail = fStep.detail;
-      }
-
       merged.push(mergedStep);
     });
+
+    // Re-assign IDs to merged timeline
+    merged.forEach((s, idx) => s.id = `step_${idx}`);
 
     return merged;
   }
@@ -157,12 +155,42 @@ const PostSenseEngine = (() => {
    * Generates actionable insights from the divergence.
    */
   function generateReasoning(mergedTimeline, workingReq, failedReq) {
+    if (!workingReq) {
+      const firstFail = mergedTimeline.find(s => s.status === 'failed' || s.isFirstFailure);
+      const status = failedReq.response?.status;
+      
+      let heuristic = {
+        mode: "NO_BASELINE",
+        firstDivergence: firstFail ? firstFail.step : "Final Response",
+        explanation: "No successful request observed. Showing best-guess diagnosis.",
+        confidence: "low",
+        confidenceReason: "No successful baseline observed"
+      };
+
+      if (status === 404) {
+        heuristic.explanation = "Endpoint rejected this path with 404. It may be invalid or require a different structure.";
+        heuristic.confidence = "medium";
+        heuristic.action = "Try base endpoint or check URL";
+      } else if (status === 405) {
+        heuristic.explanation = "Method Mismatch suspected. The target endpoint may not support " + failedReq.method + ".";
+        heuristic.confidence = "medium";
+        heuristic.action = "Try GET or check documentation";
+      } else if (status === 401 || status === 403) {
+        heuristic.explanation = "Unauthorized. The server rejected the credentials or origin.";
+        heuristic.confidence = "medium";
+        heuristic.action = "Verify headers and Auth";
+      }
+
+      return heuristic;
+    }
+
     const firstDiv = mergedTimeline.find(s => s.isFirstDivergence);
     
     if (!firstDiv) {
       return {
         explanation: "No structural divergence detected. The failure might be data-dependent.",
-        confidence: "medium"
+        confidence: "medium",
+        confidenceReason: "Observed identical success"
       };
     }
 
@@ -171,6 +199,11 @@ const PostSenseEngine = (() => {
       return {
         firstDivergence: "Method Check",
         explanation: `${failedReq.method} used instead of ${workingReq.method}; endpoint likely read-only or restricted.`,
+        expected: workingReq.method,
+        actual: failedReq.method,
+        impact: "This endpoint appears to restricted to specific HTTP methods.",
+        action: "Switch to GET",
+        actionId: "retry-get",
         confidence: "high"
       };
     }
@@ -179,6 +212,10 @@ const PostSenseEngine = (() => {
       return {
         firstDivergence: "Simulation Layer",
         explanation: "Request works in PostSense Mode but fails in Browser Mode. Likely a CORS or Forbidden Header restriction.",
+        expected: "Unrestricted Network (App)",
+        actual: "CORS-Enforced Network (Browser)",
+        impact: "This request will fail in a real web browser but work in tools like Postman.",
+        action: "Switch to PostSense Mode",
         confidence: "high"
       };
     }
@@ -188,15 +225,34 @@ const PostSenseEngine = (() => {
         return {
           firstDivergence: "Receive Response",
           explanation: "The endpoint exists but rejected this specific configuration with a 404.",
+          expected: "HTTP 200 (Success)",
+          actual: `HTTP 404 (Not Found)`,
+          impact: "The server might require a specific URL structure or headers not present in this request.",
+          action: "Check Path/Headers",
           confidence: "high"
         };
       }
     }
 
     // Default Fallback
+    if (firstDiv.status === 'different' && firstDiv.working === firstDiv.failed) {
+       return {
+          firstDivergence: firstDiv.step,
+          explanation: "The request configuration matches the successful baseline perfectly, yet the server rejected it.",
+          expected: "Success",
+          actual: "Failure",
+          impact: "This usually points to dynamic state changes: expired session tokens, CSRF mismatches, or rate limiting.",
+          action: "Check Headers / Refresh Session",
+          confidence: "high"
+       };
+    }
+
     return {
       firstDivergence: firstDiv.step,
       explanation: `Divergence found at ${firstDiv.step}. Working state: ${firstDiv.working}, Failed state: ${firstDiv.failed}.`,
+      expected: firstDiv.working,
+      actual: firstDiv.failed,
+      impact: "The request execution path changed unexpectedly at this phase.",
       confidence: "medium"
     };
   }
