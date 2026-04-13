@@ -1,4 +1,4 @@
-# BetterMan: Your API Debugging Assistant
+# BetterMan: A Better API Tool
 
 **Stop staring at generic 404s and 405s.**  
 Most API clients just send requests; BetterMan actually debugs them by comparing your failures against your history.  
