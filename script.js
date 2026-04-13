@@ -71,22 +71,50 @@ document.addEventListener('DOMContentLoaded', () => {
     issuesList.innerHTML = '';
   }
 
-  function analyzeResponse(response, headersObj) {
-    let hasError = false;
+  function analyzeResponse(response, headersObj, requestOrigin) {
+    let hasIssues = false;
 
+    // 1. HTTP Status Check
+    if (response.status >= 400 && response.status < 500) {
+      logIssue({
+        problem: `Client Error (${response.status})`,
+        why: `The server responded with a client-side error: ${response.statusText}`,
+        severity: 'warning'
+      });
+      hasIssues = true;
+    } else if (response.status >= 500) {
+      logIssue({
+        problem: `Server Error (${response.status})`,
+        why: `The server encountered an error while processing the request: ${response.statusText}`,
+        severity: 'error'
+      });
+      hasIssues = true;
+    }
+
+    // 2. CORS Checks
     if (isBrowserMode) {
-      const corsHeader = headersObj['access-control-allow-origin'] || headersObj['Access-Control-Allow-Origin'];
-      if (!corsHeader) {
+      const acao = headersObj['access-control-allow-origin'] || headersObj['Access-Control-Allow-Origin'];
+      
+      if (!acao) {
         logIssue({
           problem: 'CORS Missing',
           why: 'This API will fail in browser due to missing CORS headers',
           fix: 'Access-Control-Allow-Origin: *',
           severity: 'error'
         });
-        hasError = true;
+        hasIssues = true;
+      } else if (acao !== '*' && acao !== requestOrigin) {
+        logIssue({
+          problem: 'CORS Mismatch',
+          why: `The 'Access-Control-Allow-Origin' header (${acao}) does not match the request Origin (${requestOrigin}).`,
+          fix: `Access-Control-Allow-Origin: ${requestOrigin}`,
+          severity: 'error'
+        });
+        hasIssues = true;
       }
     }
 
+    // 3. Success State (only if no issues logged yet)
     if (issuesList.children.length === 0) {
        const li = document.createElement('li');
        li.className = 'issue-card severity-success';
@@ -201,7 +229,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const text = await response.text();
       resBody.textContent = formatOutput(text);
 
-      analyzeResponse(response, resHeadersObj);
+      const requestOrigin = options.headers['Origin'] || options.headers['origin'] || 'null';
+      analyzeResponse(response, resHeadersObj, requestOrigin);
 
     } catch (error) {
       resStatus.textContent = 'Network Error';

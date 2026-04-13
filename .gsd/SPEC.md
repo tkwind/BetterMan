@@ -11,6 +11,7 @@ A minimal web-based UI for an API request tool that allows users to send request
 3. Provide an intuitive Response panel for Status, Headers, and formatted JSON Body.
 4. Support Postman Mode (as-is) and Browser Mode (injecting Origin, restricted header logic).
 5. Document the codebase with a "Code Explanation".
+6. Implement a robust Issue Detection Engine to identify CORS issues, HTTP errors, and method mismatches.
 
 ## Non-Goals (Out of Scope)
 - No build tools (Webpack, Vite, etc.)
@@ -29,3 +30,6 @@ Developers seeking a lightweight, purely local API request tool runnable entirel
 - [ ] Requests successfully fire and load responses into the Right panel.
 - [ ] Mode toggling behavior affects the structure of the outgoing request.
 - [ ] Detailed code explanation is provided.
+- [ ] HTTP errors (4xx, 5xx) are automatically flagged in the Issues panel.
+- [ ] CORS missing or mismatched headers are specifically identified and explained.
+- [ ] The "No issues detected" state is accurate and only shown when true.
