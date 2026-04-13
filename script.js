@@ -72,7 +72,29 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function analyzeResponse(response, headersObj) {
-    // Stub to be implemented in Phase 2
+    let hasError = false;
+
+    if (isBrowserMode) {
+      const corsHeader = headersObj['access-control-allow-origin'] || headersObj['Access-Control-Allow-Origin'];
+      if (!corsHeader) {
+        logIssue({
+          problem: 'CORS Missing',
+          why: 'This API will fail in browser due to missing CORS headers',
+          fix: 'Access-Control-Allow-Origin: *',
+          severity: 'error'
+        });
+        hasError = true;
+      }
+    }
+
+    if (issuesList.children.length === 0) {
+       const li = document.createElement('li');
+       li.className = 'issue-card severity-success';
+       li.style.borderLeftColor = '#27ae60';
+       li.style.background = '#eafaf1';
+       li.innerHTML = '<div class="issue-title" style="color: #27ae60;">No issues detected</div><div class="issue-why">The request executed cleanly according to simulation rules.</div>';
+       issuesList.appendChild(li);
+    }
   }
 
   // Build Headers Object
@@ -100,11 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (isBrowserMode && !headers['Origin'] && !headers['origin']) {
-        headers['Origin'] = window.location.origin || 'http://localhost';
-        logIssue({
-          problem: 'Injected Origin header for Browser Mode simulation.',
-          severity: 'warning'
-        });
+        headers['Origin'] = 'http://localhost:3000';
     }
 
     return headers;
@@ -165,6 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
     resBody.textContent = '';
 
     try {
+      console.log('Raw Request Headers Sent:', options.headers);
       const response = await fetch(url, options);
       
       resStatus.textContent = `${response.status} ${response.statusText}`;
