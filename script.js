@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
             deltas = compareRequests(currentReqState, successfulAlternative);
             const theory = inferCause(deltas);
             promotedTitle = theory.title;
-            reasoning = `${successfulAlternative.method} succeeded (200). ${theory.reason}`;
+            reasoning = `${successfulAlternative.method} succeeded previously. ${theory.reason}`;
           }
 
           suggestions.push({ 
@@ -172,9 +172,9 @@ document.addEventListener('DOMContentLoaded', () => {
         problem: promotedTitle,
         supportingStatus: `Status: ${response.status} ${response.statusText}`,
         why: successfulAlternative 
-             ? `Conflict detected: ${currentMethod} failed while ${successfulAlternative.method} was accepted previously.`
-             : `The requested endpoint does not exist for ${currentMethod}.`,
-        fix: 'Check for typos or follow the suggested theory below.',
+             ? `Observed outcome divergence: ${currentMethod} failed while ${successfulAlternative.method} succeeded previously.`
+             : `The server responded that this endpoint does not exist for ${currentMethod}.`,
+        fix: 'Verify the endpoint path or follow the observed configuration theory below.',
         severity: 'error',
         suggestions
       });
@@ -260,14 +260,14 @@ document.addEventListener('DOMContentLoaded', () => {
   function inferCause(deltas) {
     if (deltas.some(d => d.includes('Body: Present → None'))) {
       return {
-        title: "Payload Restriction Detected",
+        title: "Observed Payload Restriction",
         reason: "The server appears to reject requests containing a payload body for this endpoint."
       };
     }
     if (deltas.some(d => d.includes('Method:'))) {
       return {
-        title: "Method Requirement Conflict",
-        reason: "This endpoint requires a specific HTTP method (likely GET) that differs from your current request."
+        title: "Observed Method Incompatibility",
+        reason: "This endpoint requires a specific HTTP method that differs from your current request."
       };
     }
     return {
@@ -329,6 +329,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function isValidUrl(string) {
+    try {
+      const url = new URL(string);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch (_) {
+      return false;
+    }
+  }
+
   // Build Headers Object
   function getHeaders() {
     const headers = {};
@@ -379,16 +388,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!url) {
       logIssue({
-        problem: 'URL cannot be empty',
-        why: 'The fetch request requires an active endpoint to target.',
+        problem: 'URL Required',
+        why: 'The request cannot be sent without a target endpoint.',
         severity: 'error'
       });
       return;
     }
 
     // Attempt to normalize URL if scheme is missing
-    if (!/^https?:\/\//i.test(url)) {
+    if (!/^[a-z]+:\/\//i.test(url)) {
       url = 'https://' + url;
+    }
+
+    if (!isValidUrl(url)) {
+      resStatus.textContent = 'Invalid URL';
+      logIssue({
+        problem: 'Malformed URL Detected',
+        why: `"${url}" is not a valid HTTP/HTTPS endpoint.`,
+        fix: 'Enter a valid URL (e.g., https://example.com)',
+        severity: 'error'
+      });
+      return;
     }
 
     let bodyData = bodyTextarea.value.trim();

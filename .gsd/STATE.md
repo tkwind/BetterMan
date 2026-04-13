@@ -1,11 +1,11 @@
 ## Current Position
-- **Milestone**: v1.0 - Root Cause Promotion
+- **Milestone**: v1.2 - Consistency & Trust Lock
 - **Phase**: 1 (completed)
 - **Task**: All tasks complete
 - **Status**: Verified
 
 ## Last Session Summary
-Phase 1 executed successfully. Achieved "Root Cause Promotion"—the tool now leads with intelligent theories (e.g. "Payload Restriction") and relegates raw HTTP statuses to supporting subtext. Verified via browser.
+Phase 1 executed successfully. Implemented URL validation to catch malformed inputs and standardized the tool's terminology to an empirical, "Observed-based" tone for professional trust.
 
 ## Next Steps
 1. /plan 2

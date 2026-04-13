@@ -4,10 +4,10 @@ plan: 1
 wave: 1
 ---
 
-# Plan 1.1: Issue Promotion & Structural Shift
+# Plan 1.1: Validation & Standardization
 
 ## Objective
-Promote inferred causal theories to become the primary focus of the UI, making raw HTTP errors supporting context rather than the main problem title.
+Standardize the tool's core logic and inputs to ensure consistent, professional, and reliable behavior.
 
 ## Context
 - .gsd/SPEC.md
@@ -16,32 +16,32 @@ Promote inferred causal theories to become the primary focus of the UI, making r
 ## Tasks
 
 <task type="auto">
-  <name>Refactor Analysis for Promotion</name>
+  <name>Implement URL Validation & Input Cleaning</name>
   <files>d:\Projects\Better-man\script.js</files>
   <action>
-    - Update `analyzeResponse` to identify if a "High Confidence" causal inference exists.
-    - If it exists, set a new `promotedTitle` field (e.g. "Payload Restriction Detected" instead of "Endpoint Not Found").
-    - Capture the raw HTTP status as `supportingStatus` (e.g. "Status: 404").
-    - Ensure inference wording is precise and cautious (using "likely", "appears to", "observed").
+    - Add a `validateUrl(url)` helper function.
+    - Update the `sendBtn` click handler to reject malformed URLs (e.g., just "abc", "httpp://", etc.) with a clear error card.
+    - Ensure URL normalization (adding `https://`) is safe and doesn't create invalid strings.
   </action>
-  <verify>Check script.js for logic that swaps problem titles based on inference confidence.</verify>
-  <done>Primary issues use causal theories as titles when evidence is strong.</done>
+  <verify>Try entering 'invalid-url' and verify a validation error card appears before any network attempt.</verify>
+  <done>The tool rejects malformed inputs gracefully and predictably.</done>
 </task>
 
 <task type="auto">
-  <name>Update logIssue UI for Promoted Layout</name>
+  <name>Standardize Inference Labels & Language</name>
   <files>d:\Projects\Better-man\script.js</files>
   <action>
-    - Update the card HTML generation in `logIssue`:
-      - If `promotedTitle` exists, use it as the main header.
-      - Add a small sub-header `[Supporting Status: {code}]`.
-      - Separate the "What Changed" deltas into a clean bulleted list inside the reasoning block.
+    - Audit `inferCause` and `analyzeResponse`.
+    - Rename "Payload Restriction Detected" to "Observed Payload Restriction" to be more cautious.
+    - Rename "Method Requirement Conflict" to "Observed Method Incompatibility".
+    - Update all "Why" fields to use empirical language (e.g., "The server responded with..." instead of "The server thinks...").
+    - Ensure the same input combination (Status, History, Headers) always produces identical Theory Titles.
   </action>
-  <verify>Run a 404 POST after a 200 GET and verify the card title changes to something like "Payload Restriction".</verify>
-  <done>The UI feels intelligent by highlighting the root cause over the reactive error code.</done>
+  <verify>Trigger a 404/GET sequence and verify the title is exactly 'Observed Method Incompatibility'.</verify>
+  <done>The tool uses standardized, professional terminology that avoids overclaiming.</done>
 </task>
 
 ## Success Criteria
-- [ ] Primary issues change their title from HTTP codes to Causal Theories when evidence exists.
-- [ ] Raw status codes are displayed as small, de-emphasized supporting text.
-- [ ] Wording is refined to be precise and empirical.
+- [ ] Garbage URL inputs are caught before the fetch starts.
+- [ ] Theory titles are standardized and empirical.
+- [ ] No absolute claims (e.g. "This is a typo") are made without proof.

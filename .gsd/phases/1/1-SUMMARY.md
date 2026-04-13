@@ -1,21 +1,20 @@
-# Phase 1 Summary: Root Cause Promotion
+# Phase 1 Summary: Validation & Standardization
 
 ## Summary
-Successfully implemented the final intelligence layer that promotes inferred root causes (Theory Titles) above raw HTTP errors, effectively transforming the tool into a proactive debugging assistant.
+Successfully implemented input hardening and terminological standardization to improve the tool's reliability and professional trust levels.
 
 ## What Was Executed
 1. **script.js**:
-   - Refactored `inferCause` to generate high-level **Theory Titles** (e.g. "Payload Restriction").
-   - Updated `analyzeResponse` to lead with the Theory Title if evidence exists, relegating the HTTP status code to subtext.
-   - Refactored `logIssue` to support the new "Promoted" layout with `supporting-status` tags and clean `delta-lists`.
-2. **styles.css**:
-   - Implemented styling for the `supporting-status` tag and `delta-list` bullets.
-3. **Verification**: Verified via browser subagent that:
-   - Success -> Fail sequence triggers the **"Payload Restriction Detected"** title.
-   - **"Status: 404"** is successfully relegated to a de-emphasized tag.
-   - Multiple deltas are cleanly listed as bullets in the reasoning chain.
+   - Implemented `isValidUrl` validation helper to prevent fetches on malformed inputs.
+   - Standardized Theory Titles to use empirical prefixes (e.g. "Observed Payload Restriction").
+   - Refactored reasoning language to be observation-based (e.g. "Observed outcome divergence").
+   - Improved URL normalization to be safer and more predictable.
+2. **Verification**: Verified via browser subagent that:
+   - Malformed URLs are correctly intercepted before the network layer.
+   - Successful GET -> Failed POST sequence triggers the new standardized "Observed" labels.
+   - "Why" text is consistently empirical and professional.
 
 ## Success Guidelines Verified
-- [x] If a causal pattern is detected, promote it to Primary Issue — VERIFIED (evidence: Theory Titles used as main card headers).
-- [x] HTTP status becomes supporting context — VERIFIED (evidence: `supporting-status` tag implemented).
-- [x] Separate inference components (Method vs Body) — VERIFIED (evidence: `delta-list` broken out into bullets).
+- [x] Standardize all primary issue labels — VERIFIED (evidence: strict Theory Title mapping in `inferCause`).
+- [x] Fix URL input validation — VERIFIED (evidence: malformed strings trigger `Malformed URL Detected` card).
+- [x] Remove overconfident inference wording — VERIFIED (evidence: shift from "Detected" to "Observed" and empirical reasoning).

@@ -1,20 +1,20 @@
 # ROADMAP.md
 
-> **Current Milestone**: v1.0 - Root Cause Promotion
-> **Goal**: Promote inferred root causes above raw HTTP errors to make the tool feel intelligent rather than reactive.
+> **Current Milestone**: v1.2 - Consistency & Trust Lock
+> **Goal**: Eliminate inconsistency and misleading signals to make the tool feel reliable and professional.
 
 ## Must-Haves
-- [ ] Promote causal theories to Primary Issue
-- [ ] Relegate HTTP status to supporting context
-- [ ] Broken out inference components (Method vs Body)
-- [ ] Refined, cautious, and precise inference language
+- [ ] Standardize all primary issue labels
+- [ ] Fix URL input validation (prevent malformed inputs)
+- [ ] Context-specific actions (targeted fix instructions)
+- [ ] Empirical/Scientific inference wording overhaul
 
 ## Phases
 
-### Phase 1: Root Cause Promotion
+### Phase 1: Validation & Standardization
 **Status**: ✅ Complete
-**Objective**: Implement the theory promotion logic and refactor the UI to lead with causal insights.
+**Objective**: Implement URL validation and stabilize terminology across all logical paths.
 
-### Phase 2: Certainty & Signal Strength
+### Phase 2: Action Refinement & Trust UI
 **Status**: ⬜ Not Started
-**Objective**: Implement multi-comparison certainty levels and highlight the strongest signal.
+**Objective**: Implement context-specific quick fixes and polish UI for transparency.

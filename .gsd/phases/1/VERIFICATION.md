@@ -1,8 +1,8 @@
-## Phase 1 Verification: Root Cause Promotion
+## Phase 1 Verification: Validation & Standardization
 
 ### Must-Haves
-- [x] Promote causal pattern to Primary Issue — VERIFIED (evidence: `promotedTitle` used as card header in `analyzeResponse` logic)
-- [x] HTTP status becomes supporting context — VERIFIED (evidence: `supportingStatus` field de-emphasized in the `logIssue` layout)
-- [x] Separate inference components (Method/Body) — VERIFIED (evidence: `delta-list` implemented for granular reporting)
+- [x] Standardize all primary issue labels — VERIFIED (evidence: Theory Titles refactored for consistency)
+- [x] Fix URL input validation — VERIFIED (evidence: `isValidUrl` intercepting malformed inputs)
+- [x] Remove overconfident inference wording — VERIFIED (evidence: shift to "Observed" prefixes and empirical descriptions)
 
 ### Verdict: PASS
