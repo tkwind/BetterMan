@@ -52,11 +52,29 @@ const PostSenseEngine = (() => {
 
     // Phase 5: Environment Simulation
     if (isBrowserMode) {
-      timeline.push({ 
-        step: "Simulation Layer", 
-        status: "success", 
-        detail: "Browser Mode active (Enforcing CORS/Forbidden Headers)",
-        icon: "🛡️",
+      const acao = response?.headers?.['access-control-allow-origin'] || response?.headers?.['Access-Control-Allow-Origin'];
+      const requestOrigin = headers?.['Origin'] || headers?.['origin'] || 'http://localhost:3000';
+      const isSuccess = response && response.status >= 200 && response.status < 300;
+
+      let corsStatus = 'success';
+      let corsDetail = 'Browser Mode active — CORS headers verified';
+
+      if (isSuccess && !acao) {
+        corsStatus = 'failed';
+        corsDetail = 'CORS blocked: Access-Control-Allow-Origin header missing from response';
+      } else if (isSuccess && acao !== '*' && acao !== requestOrigin) {
+        corsStatus = 'failed';
+        corsDetail = `CORS blocked: server allows "${acao}" but request origin is "${requestOrigin}"`;
+      } else if (response?.status === 0) {
+        corsStatus = 'failed';
+        corsDetail = 'CORS preflight likely rejected — request never reached the server';
+      }
+
+      timeline.push({
+        step: 'Simulation Layer',
+        status: corsStatus,
+        detail: corsDetail,
+        icon: '🛡️',
         isPrimary: false
       });
     }

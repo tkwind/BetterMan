@@ -125,7 +125,32 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (response.status === 405) {
       responseIssues.push({ problem: 'Method Mismatch', why: `${currentMethod} not supported.`, severity: 'error' });
     } else if (response.status === 0) {
-      responseIssues.push({ problem: 'Network Failure', why: 'Could not reach server.', severity: 'error' });
+      const networkWhy = isBrowserMode
+        ? 'The request was blocked before it could reach the server. In Browser Mode this is almost always a CORS preflight rejection or a missing Access-Control-Allow-Origin header.'
+        : 'Could not reach the server. Check the URL and your network connection.';
+      responseIssues.push({ problem: 'Network Failure', why: networkWhy, severity: 'error' });
+    }
+
+    // CORS check (Browser Mode only — runs on any successful response)
+    if (isBrowserMode && response.status >= 200 && response.status < 300) {
+      const requestOrigin = headers['Origin'] || headers['origin'] || 'http://localhost:3000';
+      const acao = headersObj['access-control-allow-origin'] || headersObj['Access-Control-Allow-Origin'];
+
+      if (!acao) {
+        responseIssues.push({
+          problem: 'CORS Restriction',
+          why: 'The response is missing an Access-Control-Allow-Origin header. Browsers will block JavaScript from reading this response.',
+          fix: 'Access-Control-Allow-Origin: *',
+          severity: 'warning'
+        });
+      } else if (acao !== '*' && acao !== requestOrigin) {
+        responseIssues.push({
+          problem: 'CORS Restriction',
+          why: `The server allows origin "${acao}" but your simulated origin is "${requestOrigin}". The browser will block this response.`,
+          fix: `Access-Control-Allow-Origin: ${requestOrigin}`,
+          severity: 'warning'
+        });
+      }
     }
 
     renderAllIssues(responseIssues, inferredExplanation, successfulAlternative);
