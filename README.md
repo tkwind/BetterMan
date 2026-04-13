@@ -53,6 +53,12 @@ Your API works perfectly in your desktop client, but crashes the second you call
 
 ## Getting Started
 
+You can use BetterMan immediately in your browser or run it locally.
+
+### 1. Simple Access (No Setup)
+Open the **[Live Demo](https://tkwind.github.io/BetterMan/)** and start debugging instantly.
+
+### 2. Local Setup
 BetterMan is a single-folder, vanilla JS project. No `npm install`, no heavy dependencies.
 
 1. Clone the repo.
