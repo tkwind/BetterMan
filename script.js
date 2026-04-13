@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Toggle Mode
   modeToggle.addEventListener('change', (e) => {
     isBrowserMode = e.target.checked;
-    modeLabel.textContent = isBrowserMode ? 'Browser Mode' : 'Postman Mode';
+    modeLabel.textContent = isBrowserMode ? 'Browser Mode' : 'BetterMan Mode';
   });
 
   // Dynamic Headers
