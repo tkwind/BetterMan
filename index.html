@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Request Tool</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  
+  <!-- Top Panel: Mode Toggle -->
+  <header class="top-panel">
+    <h1>API Request Tool</h1>
+    <div class="toggle-container">
+      <span id="mode-label">Postman Mode</span>
+      <label class="switch">
+        <input type="checkbox" id="mode-toggle">
+        <span class="slider round"></span>
+      </label>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <!-- Left Panel: Request Configuration -->
+    <section class="left-panel">
+      <h2>Request Configuration</h2>
+      
+      <div class="input-group">
+        <label for="method">Method</label>
+        <select id="method">
+          <option value="GET">GET</option>
+          <option value="POST">POST</option>
+          <option value="PUT">PUT</option>
+          <option value="DELETE">DELETE</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label for="url">URL</label>
+        <input type="text" id="url" placeholder="https://jsonplaceholder.typicode.com/posts/1">
+      </div>
+
+      <div class="input-group">
+        <label>Headers</label>
+        <div id="headers-container">
+          <!-- Dynamic header rows will be appended here -->
+          <div class="header-row">
+            <input type="text" class="header-key" placeholder="Key (e.g. Content-Type)">
+            <input type="text" class="header-value" placeholder="Value (e.g. application/json)">
+            <button class="remove-header-btn">X</button>
+          </div>
+        </div>
+        <button id="add-header-btn">+ Add Header</button>
+      </div>
+
+      <div class="input-group">
+        <label for="body">JSON Body</label>
+        <textarea id="body" rows="6" placeholder='{"key": "value"}'></textarea>
+      </div>
+
+      <button id="send-btn">Send Request</button>
+    </section>
+
+    <!-- Right Panel: Response Display -->
+    <section class="right-panel">
+      <h2>Response</h2>
+      
+      <div class="response-status">
+        <strong>Status:</strong> <span id="res-status">Waiting...</span>
+      </div>
+
+      <div class="response-headers">
+        <strong>Headers:</strong>
+        <pre id="res-headers"></pre>
+      </div>
+
+      <div class="response-body">
+        <strong>Body:</strong>
+        <pre id="res-body"></pre>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom Panel: Issues -->
+  <footer class="bottom-panel">
+    <h3>Issues Detected</h3>
+    <ul id="issues-list">
+      <!-- Issues populated here -->
+    </ul>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

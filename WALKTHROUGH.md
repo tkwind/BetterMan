@@ -1,39 +1,56 @@
-# Code Walkthrough: Node CLI Request Engine
+# Code Explanation: Web-based API Request Tool
 
-This document breaks down how the minimal HTTP request engine in `app.js` works under the hood.
+This document provides a technical walkthrough of how the raw HTML/JS request engine functions as per the educational requirements.
 
-## 1. Argument Parsing
-The script extracts command-line arguments using `process.argv.slice(2)`. The first two elements in `process.argv` are always the path to Node and the path to the script, so `.slice(2)` leaves us strictly with our inputs. 
+## 1. UI Inputs Mapping
+The user interface is entirely hooked up via vanilla JavaScript DOM queries (`document.getElementById`). 
+- **Method & URL:** The `methodSelect` dropdown and `urlInput` text fields are queried dynamically upon clicking the Send button. We also apply a simple regex normalization rule `^https?://` to prepend `https://` if the user forgets a scheme in the URL input.
+- **Body:** The text block from the `bodyTextarea` is retrieved as a literal string. If the currently selected method is purely retrieval-bound (`GET` or `HEAD`), the engine safely tosses out the body string to prevent standard API rejection errors.
 
-We then map these arguments into variables via array destructuring:
-```javascript
-const [methodStr, urlStr, headersStr, bodyStr] = args;
-```
-If the user provides fewer than 2 arguments (method and URL), the script immediately prints usage examples and exits with `process.exit(1)`.
+## 2. Header Construction
+To grant users dynamic control over headers (as opposed to static configuration), we implemented a DOM append/remove mechanic. 
+- A generic `header-row` template is stored and injected as raw innerHTML whenever the `+ Add Header` button is actively requested via the `headersContainer`.
+- Through standard NodeList mapping (`querySelectorAll('.header-row')`), we loop through those fields constructing a generic `{}` JavaScript object mapping keys to values sequentially.
 
-## 2. Request Construction
-The request is constructed using Node 18's native `fetch` API. All the parameters are consolidated into an `options` object:
+## 3. Fetch Request Building
+All collected options (URL, Method, Headers, Body) are bound securely within a single `options` object block. 
 ```javascript
 const options = {
   method,
-  headers,
+  headers
 };
+if (bodyData) {
+  options.body = bodyData;
+}
 ```
-This keeps the `fetch(url, options)` call clean. If the chosen HTTP method isn't `GET` or `HEAD`, and a body was provided, it attaches the JSON string directly onto `options.body`.
+We pipe this configuration explicitly into the frontend browser's native `fetch(url, options)` execution. This resolves as an asynchronous Promise.
 
-## 3. Headers and Body Handling
-Optional inputs like headers and bodies arrive as plain strings from the CLI.
-- **Headers:** If a `headersStr` exists, `JSON.parse(headersStr)` evaluates it. This translates a JSON string like `'{"Content-Type": "application/json"}'` into a native JavaScript object that `fetch` understands.
-- **Body:** `fetch` accepts body payloads as literal strings. However, to ensure the user hasn't made a typo before sending the request, we attempt to `JSON.parse(bodyStr)`. If it passes, we assign the raw `bodyStr` to `options.body`. If it fails, we catch it early.
+## 4. Postman vs Browser Mode Logic
+A checkbox toggle intercepts state changes and assigns the boolean flag `isBrowserMode`.
+- **Postman Mode (Default):** Runs the fetch call organically as designed; whatever headers you inject are explicitly mapped and pushed to the URL endpoint without artificial intervention.
+- **Browser Mode:** If enabled, the engine forcefully filters out manually added strings matching forbidden browser signatures (e.g., `origin`, `cookie`, `host`). Following standard frontend cross-origin requests, it synthetically injects an `Origin` mapping into the header utilizing the client's `window.location.origin` as proof of imitation, tracking this manipulation heavily within the DOM's `Issues Detected` error bin.
 
-## 4. Response Processing
-When `await fetch(...)` resolves, we process the metadata and the data sequentially:
-- **Status:** We print both the numerical `.status` and textual `.statusText`.
-- **Headers:** We iterate over the `.headers.entries()` map and log each key/value pair cleanly.
-- **Body:** Using `await response.text()`, we retrieve the raw string body. The code then attempts to format it via `JSON.parse()` followed by `JSON.stringify(jsonBody, null, 2)` (which adds 2-space indentation). If it's not JSON (e.g., HTML or plaintext), the `catch` block gracefully falls back to printing the unformatted string.
+## 5. Response Rendering Mechanics
+Using an `await fetch(...)` paradigm, the system pauses execution structurally to await the network trip.
+- **Status Logging:** Renders string-literal concatenates of numerical variables like `.status` combined gracefully with standard spec terminology like `.statusText`.
+- **Header Logging:** Utilizes the hidden `response.headers` constructor logic to `.forEach` loop over securely transmitted metadata flags appending them into a readable `JSON.stringify` DOM payload.
+- **Body Styling:** The payload uses an optimistic JSON formatting block wrapped natively in a `try...catch` envelope. The content converts to JSON, pretty-printing with 2 spaces automatically. In the event the server payload is generic HTML or XML schema instead, the system gracefully traps the parse failure and injects the raw `text()` fallback onto the screen directly.
 
-## 5. Error Handling
-The code operates carefully, validating external inputs and anticipating network breaks.
-- **Invalid URLs:** Evaluated upfront within a `try-catch` block using the `new URL(urlStr)` constructor. If the URL is incorrectly formed, it halts execution.
-- **Invalid JSON Input:** Enclosed in `try-catch` blocks during both header parsing and body validation to ensure bad CLI inputs won't result in fatal unhandled Promise rejections.
-- **Network Failures:** The main `fetch` call is wrapped in a `try-catch` block. If the server cannot be reached, the connection times out, or DNS resolution fails, the script cleanly prints the error output rather than crashing mysteriously.
+---
+
+## Instructions to Run Locally
+Because this project adheres to pure DOM configurations without bundled systems dependencies, to utilize this layout locally:
+
+**Method 1: Direct File Access** (Simplest)
+- Locate the `index.html` file within your native file explorer shell.
+- Double click or right-click `Open With -> Chrome / Firefox / Safari`.
+- *Note:* Certain restrictive CORS rules might act unpredictably when the context is labeled `file:///`.
+
+**Method 2: Static Local Server** (Recommended)
+- Install any generic HTTP module. (e.g. Node)
+- Run standard local server deployment mapping back to `/`.
+  ```bash
+  npx serve .
+  ```
+  *(or for python: `python -m http.server 8000`)*
+- Traverse browser configuration to `http://localhost:3000` to execute without URL boundary violations safely.
