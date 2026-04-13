@@ -1,22 +1,20 @@
-# Phase 1 Summary: History Tracking & Evidence Logic
+# Phase 1 Summary: Causal Comparison & Inference
 
 ## Summary
-Successfully implemented session history tracking and an evidence-based reasoning engine that upgrades suggestion confidence based on observed outcomes.
+Successfully implemented a causal debugging layer that deep-diffs requests and infers the likely root cause of failures based on historical session data.
 
 ## What Was Executed
 1. **script.js**:
-   - Implemented `requestHistory` array to track session-level request metadata.
-   - Refactored `analyzeResponse` to perform historical comparisons for the current URL.
-   - Suggestions are now upgraded to "High" confidence only if an alternative success was observed.
-   - Injected explicit reasoning labels (e.g. "Observed GET succeeding...") into suggestions.
-2. **styles.css**:
-   - Added styling for the "Evidence:" reasoning block with a visual checkmark cue.
-3. **Verification**: Verified via browser subagent that:
-   - Success requests are captured.
-   - Subsequent failures cite previous successes as evidence.
-   - Confidence levels adjust dynamically based on historical availability.
+   - Expanded `requestHistory` state to capture `hasBody` and `headerCount`.
+   - Implemented `compareRequests` utility to calculate exact deltas between sessions.
+   - Implemented `inferCause` engine to map deltas to logical theories (Payload rejection, Method mismatch).
+   - Refactored `analyzeResponse` reasoning to use a structured "Evidence -> Diff -> Inference" chain.
+2. **Verification**: Verified via browser subagent that:
+   - Comparing a failed POST (with body) against a successful GET (without body) correctly identifies both deltas.
+   - The tool infers that the endpoint "likely rejects requests with payload/body data."
+   - Reasoning text is clearly displayed in the UI.
 
 ## Success Guidelines Verified
-- [x] Suggestions for 404s/405s include specific reasoning citing previous outcomes.
-- [x] "High" confidence is strictly reserved for cases with observed successful alternatives.
-- [x] The engine correctly identifies URL matches in the history.
+- [x] Reasoning text includes specific field deltas (e.g. Body: Present -> None).
+- [x] Root cause inference is displayed alongside evidence.
+- [x] Inferences correctly distinguish between method changes vs body changes.

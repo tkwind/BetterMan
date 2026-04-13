@@ -119,10 +119,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const responseIssues = [];
     const currentMethod = methodSelect.value;
     const currentUrl = urlInput.value.trim();
+    const currentHasBody = !!bodyTextarea.value.trim();
+    const currentHeaderCount = Object.keys(getHeaders()).length;
+
+    // Current Virtual Request State (for comparison)
+    const currentReqState = {
+      method: currentMethod,
+      url: currentUrl,
+      hasBody: currentHasBody,
+      headerCount: currentHeaderCount
+    };
 
     // Find evidence in history
     const historyMatches = requestHistory.filter(h => h.url === currentUrl);
-    const successfulAlternative = historyMatches.find(h => h.status < 300 && h.method !== currentMethod);
+    const successfulAlternative = historyMatches.find(h => h.status < 300);
 
     // 1. Advanced HTTP Status Mapping
     if (response.status === 404) {
@@ -130,12 +140,20 @@ document.addEventListener('DOMContentLoaded', () => {
       
       if (currentMethod !== 'GET') {
           const isEvidenceBased = successfulAlternative && successfulAlternative.method === 'GET';
+          
+          let reasoning = '';
+          if (successfulAlternative) {
+            const deltas = compareRequests(currentReqState, successfulAlternative);
+            const cause = inferCause(deltas);
+            reasoning = `${successfulAlternative.method} succeeded (200). Diff: ${deltas.join(', ')}. Inferred: ${cause}`;
+          }
+
           suggestions.push({ 
             id: 'retry-get', 
             label: 'Retry as GET', 
             confidence: isEvidenceBased ? 'High' : 'Medium', 
             btnLabel: 'Switch',
-            reasoning: isEvidenceBased ? `Observed GET succeeding (200) previously on this URL.` : ''
+            reasoning: reasoning
           });
       }
       
@@ -211,6 +229,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Process all issues
     renderAllIssues(responseIssues);
+  }
+
+  function compareRequests(failed, success) {
+    const deltas = [];
+    if (failed.method !== success.method) {
+      deltas.push(`Method: ${failed.method} → ${success.method}`);
+    }
+    if (failed.hasBody !== success.hasBody) {
+      deltas.push(`Body: ${failed.hasBody ? 'Present' : 'None'} → ${success.hasBody ? 'Present' : 'None'}`);
+    }
+    if (failed.headerCount !== success.headerCount) {
+      deltas.push(`Headers: ${failed.headerCount} items → ${success.headerCount} items`);
+    }
+    return deltas;
+  }
+
+  function inferCause(deltas) {
+    if (deltas.some(d => d.includes('Body: Present → None'))) {
+      return "Endpoint likely rejects requests with payload/body data.";
+    }
+    if (deltas.some(d => d.includes('Method:'))) {
+      return "Endpoint likely expects a different HTTP method for this action.";
+    }
+    return "The configuration of the successful request is more compatible with the server logic.";
   }
 
   function renderAllIssues(responseIssues) {
@@ -378,6 +420,8 @@ document.addEventListener('DOMContentLoaded', () => {
         method,
         url,
         status: response.status,
+        hasBody: !!bodyData,
+        headerCount: Object.keys(headers).length,
         timestamp: Date.now()
       });
 

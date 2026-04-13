@@ -1,8 +1,8 @@
-## Phase 1 Verification: History Tracking & Evidence Logic
+## Phase 1 Verification: Causal Comparison & Inference
 
 ### Must-Haves
-- [x] Track last request + result — VERIFIED (evidence: `requestHistory` array captures data on every send)
-- [x] Confidence must be evidence-based — VERIFIED (evidence: `High` confidence logic in `analyzeResponse` requires `successfulAlternative`)
-- [x] Upgrade suggestions to include reasoning — VERIFIED (evidence: `reasoning` field injected with cites like "Observed GET succeeding...")
+- [x] Request comparison engine (method, headers, body) — VERIFIED (evidence: `compareRequests` identifies exactly these fields)
+- [x] Highlight differences (e.g. Method: POST -> GET) — VERIFIED (evidence: `reasoning` string concatenation in `analyzeResponse`)
+- [x] Root cause inference — VERIFIED (evidence: `inferCause` mapping for payload rejection and method mismatch)
 
 ### Verdict: PASS

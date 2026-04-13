@@ -1,20 +1,20 @@
 # ROADMAP.md
 
-> **Current Milestone**: v0.8 - Evidence-Based Debugging
-> **Goal**: Make every suggestion backed by observable evidence, not generic heuristics.
+> **Current Milestone**: v0.9 - Causal Debugging Layer
+> **Goal**: Move from correlation-based suggestions to identifying the most likely root cause by comparing differences between requests.
 
 ## Must-Haves
-- [ ] Track last request + result (Status codes, response bodies)
-- [ ] Evidence-based Confidence: "High" only if working alternative observed
-- [ ] Suggestions include reasoning citing historical evidence
-- [ ] Result Comparison panel: Before vs After request view
+- [ ] Request comparison engine (Method, Body, Headers)
+- [ ] Visual diff for differences
+- [ ] Root cause inference (e.g. "Endpoint likely expects GET")
+- [ ] Enhanced causal evidence messaging
 
 ## Phases
 
-### Phase 1: History Tracking & Evidence Logic
+### Phase 1: Causal Comparison & Inference
 **Status**: ✅ Complete
-**Objective**: Implement state tracking for requests and use comparison data to provide evidence-backed logic.
+**Objective**: Implement the logical comparison engine and root cause mapping logic.
 
-### Phase 2: Comparison UI
+### Phase 2: Advanced UI Highlighting
 **Status**: ⬜ Not Started
-**Objective**: Add the "Before vs After" comparison panel and polish the evidence-based messaging.
+**Objective**: Implement visual diff UI and inline highlighting for changes.
