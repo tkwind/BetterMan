@@ -1,0 +1,12 @@
+.gsd/
+.agent/
+.agents/
+.gemini/
+adapters/
+docs/
+scripts/
+gsd-template/
+node_modules/
+*.webp
+*.png
+*.log
