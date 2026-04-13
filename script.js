@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (response.status === 404) {
       const suggestions = [{ id: 'check-path', label: 'Verify URL path', confidence: 'High' }];
       
-      let promotedTitle = 'Endpoint Not Found (404)';
+      let promotedTitle = 'Endpoint Not Found';
       let reasoning = '';
       let deltas = [];
 
@@ -178,20 +178,22 @@ document.addEventListener('DOMContentLoaded', () => {
         severity: 'error',
         suggestions
       });
-    } else if (response.status === 401 || response.status === 403) {
+    } else if (response.status === 401 || response.status === 403 || response.status === 400) {
       responseIssues.push({
-        problem: 'Authentication Issue',
-        why: `Request was rejected with ${response.status}.`,
+        problem: 'Malformed Request',
+        supportingStatus: `Status: ${response.status} ${response.statusText}`,
+        why: `The request was rejected by the server with code ${response.status}.`,
         severity: 'error',
         suggestions: [
-          { id: 'verify-auth', label: 'Check Auth Headers', confidence: 'High' },
+          { id: 'verify-auth', label: 'Check Auth/Payload', confidence: 'High' },
           { id: 'check-path', label: 'Verify URL path', confidence: 'Medium' }
         ]
       });
     } else if (response.status === 405) {
       const isGetWorking = successfulAlternative && successfulAlternative.method === 'GET';
       responseIssues.push({
-        problem: 'Method Not Allowed (405)',
+        problem: 'Method Mismatch Detected',
+        supportingStatus: `Status: ${response.status} ${response.statusText}`,
         why: `${currentMethod} is not supported here. ${isGetWorking ? 'GET was observed to work previously.' : ''}`,
         severity: 'error',
         suggestions: [
@@ -206,13 +208,15 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     } else if (response.status >= 400 && response.status < 500) {
       responseIssues.push({
-        problem: `Client Error (${response.status})`,
+        problem: 'Malformed Request',
+        supportingStatus: `Status: ${response.status} ${response.statusText}`,
         why: `The server responded with an error: ${response.statusText}`,
         severity: 'error'
       });
     } else if (response.status >= 500) {
       responseIssues.push({
-        problem: `Server Error (${response.status})`,
+        problem: 'Network Failure',
+        supportingStatus: `Status: ${response.status} ${response.statusText}`,
         why: 'The server encountered an unexpected condition which prevented it from fulfilling the request.',
         severity: 'error'
       });
@@ -224,14 +228,14 @@ document.addEventListener('DOMContentLoaded', () => {
       
       if (!acao) {
         responseIssues.push({
-          problem: 'CORS Missing',
+          problem: 'CORS Restriction',
           why: 'This API will fail in browser due to missing CORS headers',
           fix: 'Access-Control-Allow-Origin: *',
           severity: 'warning'
         });
       } else if (acao !== '*' && acao !== requestOrigin) {
         responseIssues.push({
-          problem: 'CORS Mismatch',
+          problem: 'CORS Restriction',
           why: `The 'Access-Control-Allow-Origin' header (${acao}) does not match the request Origin (${requestOrigin}).`,
           fix: `Access-Control-Allow-Origin: ${requestOrigin}`,
           severity: 'warning'
@@ -258,20 +262,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function inferCause(deltas) {
-    if (deltas.some(d => d.includes('Body: Present → None'))) {
+    if (deltas.some(d => d.includes('Body: Present → None')) || deltas.some(d => d.includes('Method:'))) {
       return {
-        title: "Observed Payload Restriction",
-        reason: "The server appears to reject requests containing a payload body for this endpoint."
-      };
-    }
-    if (deltas.some(d => d.includes('Method:'))) {
-      return {
-        title: "Observed Method Incompatibility",
-        reason: "This endpoint requires a specific HTTP method that differs from your current request."
+        title: "Method Mismatch Detected",
+        reason: "The server appears to require a different request configuration (Method or Payload) than provided."
       };
     }
     return {
-      title: "Configuration Mismatch",
+      title: "Malformed Request",
       reason: "An observed successful alternative exists with a different request configuration."
     };
   }
@@ -332,7 +330,13 @@ document.addEventListener('DOMContentLoaded', () => {
   function isValidUrl(string) {
     try {
       const url = new URL(string);
-      return url.protocol === 'http:' || url.protocol === 'https:';
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
+      // Require at least one dot in hostname unless it is localhost or an IP
+      const hostname = url.hostname;
+      const isIp = /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname) || hostname.includes(':');
+      const isLocal = hostname === 'localhost';
+      const hasDot = hostname.includes('.');
+      return isIp || isLocal || hasDot;
     } catch (_) {
       return false;
     }
@@ -403,7 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!isValidUrl(url)) {
       resStatus.textContent = 'Invalid URL';
       logIssue({
-        problem: 'Malformed URL Detected',
+        problem: 'Malformed Request',
         why: `"${url}" is not a valid HTTP/HTTPS endpoint.`,
         fix: 'Enter a valid URL (e.g., https://example.com)',
         severity: 'error'
@@ -470,7 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
       resStatus.textContent = 'Network Error';
       resBody.textContent = error.toString();
       logIssue({
-        problem: `Fetch failed: ${error.message}`,
+        problem: 'Network Failure',
         why: 'This might be a server fault, a network drop, or a CORS restriction preventing the request.',
         severity: 'error'
       });
