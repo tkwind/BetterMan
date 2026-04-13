@@ -6,6 +6,7 @@
   <title>PostSense - Intelligence-Backed API Debugging</title>
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="stylesheet" href="styles.css">
+  <script src="timeline-engine.js"></script>
 </head>
 <body>
   
@@ -87,7 +88,12 @@
   </main>
 
   <!-- Bottom Panel: Issues -->
-  <footer class="bottom-panel">
+    <section id="debug-timeline-section" style="display: none;">
+      <h3>Execution Timeline</h3>
+      <div id="timeline-reasoning"></div>
+      <div id="timeline-output"></div>
+    </section>
+
     <h3>Issues Detected</h3>
     <ul id="issues-list">
       <!-- Issues populated here -->

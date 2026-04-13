@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const resHeaders = document.getElementById('res-headers');
   const resBody = document.getElementById('res-body');
   const issuesList = document.getElementById('issues-list');
+  const timelineSection = document.getElementById('debug-timeline-section');
+  const timelineOutput = document.getElementById('timeline-output');
+  const timelineReasoning = document.getElementById('timeline-reasoning');
 
   let isBrowserMode = false;
   let requestHistory = []; // Tracks { method, url, status, timestamp }
@@ -121,158 +124,138 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function clearIssues() {
     issuesList.innerHTML = '';
+    timelineSection.style.display = 'none';
   }
 
-  function analyzeResponse(response, headersObj, requestOrigin) {
+  function analyzeResponse(response, headersObj) {
     const responseIssues = [];
     const currentMethod = methodSelect.value;
     const currentUrl = urlInput.value.trim();
     const currentHasBody = !!bodyTextarea.value.trim();
-    const currentHeaderCount = Object.keys(getHeaders()).length;
+    const headers = getHeaders();
 
-    // Current Virtual Request State (for comparison)
-    const currentReqState = {
+    const currentRequestData = {
       method: currentMethod,
       url: currentUrl,
-      hasBody: currentHasBody,
-      headerCount: currentHeaderCount
+      headers: headers,
+      body: bodyTextarea.value.trim(),
+      isBrowserMode,
+      response: {
+        status: response.status,
+        headers: headersObj,
+        body: resBody.textContent
+      }
     };
+
+    const failedTimeline = PostSenseEngine.buildBaselineTimeline(currentRequestData);
 
     // Find evidence in history
     const historyMatches = requestHistory.filter(h => h.url === currentUrl);
     const successfulAlternative = historyMatches.find(h => h.status < 300);
 
-    // 1. Advanced HTTP Status Mapping
-    if (response.status === 404) {
-      const suggestions = [{ id: 'check-path', label: 'Verify URL path', confidence: 'High' }];
-      
-      let promotedTitle = 'Endpoint Not Found';
-      let reasoning = '';
-      let deltas = [];
+    if (successfulAlternative) {
+      const workingRequestData = {
+        method: successfulAlternative.method,
+        url: successfulAlternative.url,
+        headers: successfulAlternative.headers || {},
+        body: successfulAlternative.body || "",
+        isBrowserMode: successfulAlternative.isBrowserMode,
+        response: {
+          status: successfulAlternative.status,
+          headers: successfulAlternative.resHeaders || {},
+          body: successfulAlternative.resBody || ""
+        }
+      };
 
-      if (currentMethod !== 'GET') {
-          if (successfulAlternative) {
-            deltas = compareRequests(currentReqState, successfulAlternative);
-            const theory = inferCause(deltas);
-            promotedTitle = theory.title;
-            reasoning = `${successfulAlternative.method} succeeded previously. ${theory.reason}`;
-          }
+      const workingTimeline = PostSenseEngine.buildBaselineTimeline(workingRequestData);
+      const mergedTimeline = PostSenseEngine.compareTimelines(workingTimeline, failedTimeline);
+      const reasoning = PostSenseEngine.generateReasoning(mergedTimeline, workingRequestData, currentRequestData);
 
-          suggestions.push({ 
-            id: 'retry-get', 
-            label: 'Retry as GET', 
-            confidence: (successfulAlternative && successfulAlternative.method === 'GET') ? 'High' : 'Medium', 
-            btnLabel: 'Switch',
-            reasoning: reasoning,
-            deltas: deltas
-          });
-      }
-      
-      responseIssues.push({
-        problem: promotedTitle,
-        supportingStatus: `Status: ${response.status} ${response.statusText}`,
-        why: successfulAlternative 
-             ? `Observed outcome divergence: ${currentMethod} failed while ${successfulAlternative.method} succeeded previously.`
-             : `The server responded that this endpoint does not exist for ${currentMethod}.`,
-        fix: 'Verify the endpoint path or follow the observed configuration theory below.',
-        severity: 'error',
-        suggestions
-      });
-    } else if (response.status === 401 || response.status === 403 || response.status === 400) {
-      responseIssues.push({
-        problem: 'Malformed Request',
-        supportingStatus: `Status: ${response.status} ${response.statusText}`,
-        why: `The request was rejected by the server with code ${response.status}.`,
-        severity: 'error',
-        suggestions: [
-          { id: 'verify-auth', label: 'Check Auth/Payload', confidence: 'High' },
-          { id: 'check-path', label: 'Verify URL path', confidence: 'Medium' }
-        ]
-      });
-    } else if (response.status === 405) {
-      const isGetWorking = successfulAlternative && successfulAlternative.method === 'GET';
-      responseIssues.push({
-        problem: 'Method Mismatch Detected',
-        supportingStatus: `Status: ${response.status} ${response.statusText}`,
-        why: `${currentMethod} is not supported here. ${isGetWorking ? 'GET was observed to work previously.' : ''}`,
-        severity: 'error',
-        suggestions: [
-          { 
-            id: 'retry-get', 
-            label: 'Switch to GET', 
-            confidence: isGetWorking ? 'High' : 'Medium',
-            reasoning: isGetWorking ? 'GET returned 200 on this URL earlier.' : ''
-          },
-          { id: 'check-path', label: 'Check API Docs', confidence: 'Medium' }
-        ]
-      });
-    } else if (response.status >= 400 && response.status < 500) {
-      responseIssues.push({
-        problem: 'Malformed Request',
-        supportingStatus: `Status: ${response.status} ${response.statusText}`,
-        why: `The server responded with an error: ${response.statusText}`,
-        severity: 'error'
-      });
-    } else if (response.status >= 500) {
-      responseIssues.push({
-        problem: 'Network Failure',
-        supportingStatus: `Status: ${response.status} ${response.statusText}`,
-        why: 'The server encountered an unexpected condition which prevented it from fulfilling the request.',
-        severity: 'error'
-      });
+      renderTimeline(mergedTimeline, reasoning);
+    } else {
+      // If no alternative, just show the single failed timeline
+      renderTimeline(failedTimeline);
     }
 
-    // 2. CORS Checks
-    if (isBrowserMode && response.status < 300) {
-      const acao = headersObj['access-control-allow-origin'] || headersObj['Access-Control-Allow-Origin'];
-      
-      if (!acao) {
-        responseIssues.push({
-          problem: 'CORS Restriction',
-          why: 'This API will fail in browser due to missing CORS headers',
-          fix: 'Access-Control-Allow-Origin: *',
-          severity: 'warning'
-        });
-      } else if (acao !== '*' && acao !== requestOrigin) {
-        responseIssues.push({
-          problem: 'CORS Restriction',
-          why: `The 'Access-Control-Allow-Origin' header (${acao}) does not match the request Origin (${requestOrigin}).`,
-          fix: `Access-Control-Allow-Origin: ${requestOrigin}`,
-          severity: 'warning'
-        });
-      }
+    // Existing label analysis for specific feedback cards
+    // 1. Advanced HTTP Status Mapping
+    if (response.status === 404) {
+      // ... keep existing logic but simplify since timeline carries the weight
+      responseIssues.push({
+        problem: 'Endpoint Not Found',
+        supportingStatus: `Status: ${response.status}`,
+        why: 'The server responded that this endpoint does not exist.',
+        severity: 'error',
+        suggestions: [{ id: 'check-path', label: 'Verify URL path', confidence: 'High' }]
+      });
+    } else if (response.status === 405) {
+      responseIssues.push({
+        problem: 'Method Mismatch Detected',
+        supportingStatus: `Status: ${response.status}`,
+        why: `${currentMethod} is not supported here.`,
+        severity: 'error'
+      });
     }
 
     // Process all issues
     renderAllIssues(responseIssues);
   }
 
-  function compareRequests(failed, success) {
-    const deltas = [];
-    if (failed.method !== success.method) {
-      deltas.push(`Method: ${failed.method} → ${success.method}`);
+  function renderTimeline(timeline, reasoning) {
+    timelineSection.style.display = 'block';
+    timelineOutput.innerHTML = '';
+    timelineReasoning.innerHTML = '';
+
+    if (reasoning) {
+      timelineReasoning.innerHTML = `
+        <div class="reasoning-panel">
+          <div class="reasoning-header">
+            <span>Inferred Cause</span>
+            <span class="confidence-chip">${reasoning.confidence}</span>
+          </div>
+          <div class="reasoning-body">
+            <strong>${reasoning.firstDivergence || 'Analysis'}:</strong> ${reasoning.explanation}
+          </div>
+        </div>
+      `;
     }
-    if (failed.hasBody !== success.hasBody) {
-      deltas.push(`Body: ${failed.hasBody ? 'Present' : 'None'} → ${success.hasBody ? 'Present' : 'None'}`);
-    }
-    if (failed.headerCount !== success.headerCount) {
-      deltas.push(`Headers: ${failed.headerCount} items → ${success.headerCount} items`);
-    }
-    return deltas;
+
+    const container = document.createElement('div');
+    container.className = 'timeline-container';
+
+    timeline.forEach(step => {
+      const entry = document.createElement('div');
+      entry.className = `timeline-entry status-${step.status}`;
+      
+      let html = `
+        <div class="timeline-marker"></div>
+        <div class="timeline-content">
+          <div class="timeline-header">
+            <span>${step.icon || '•'}</span>
+            <span>${step.step}</span>
+            ${step.isFirstDivergence ? '<span class="timeline-divergence">FIRST DIVERGENCE</span>' : ''}
+          </div>
+          ${step.detail ? `<div class="timeline-detail">${step.detail}</div>` : ''}
+      `;
+
+      if (step.status === 'different') {
+        html += `
+          <div class="timeline-comparison">
+            <div class="comp-working">Working: ${step.working}${step.workingCode ? ` (HTTP ${step.workingCode})` : ''}</div>
+            <div class="comp-failed">Failed: ${step.failed}${step.failedCode ? ` (HTTP ${step.failedCode})` : ''}</div>
+          </div>
+        `;
+      }
+
+      html += `</div>`;
+      entry.innerHTML = html;
+      container.appendChild(entry);
+    });
+
+    timelineOutput.appendChild(container);
   }
 
-  function inferCause(deltas) {
-    if (deltas.some(d => d.includes('Body: Present → None')) || deltas.some(d => d.includes('Method:'))) {
-      return {
-        title: "Method Mismatch Detected",
-        reason: "The server appears to require a different request configuration (Method or Payload) than provided."
-      };
-    }
-    return {
-      title: "Malformed Request",
-      reason: "An observed successful alternative exists with a different request configuration."
-    };
-  }
+
 
   function renderAllIssues(responseIssues) {
     // Current issuesList already has pre-fetch issues (like blocked headers)
@@ -464,9 +447,12 @@ document.addEventListener('DOMContentLoaded', () => {
       requestHistory.push({
         method,
         url,
+        headers,
+        body: bodyData,
+        isBrowserMode,
         status: response.status,
-        hasBody: !!bodyData,
-        headerCount: Object.keys(headers).length,
+        resHeaders: resHeadersObj,
+        resBody: resBody.textContent,
         timestamp: Date.now()
       });
 
