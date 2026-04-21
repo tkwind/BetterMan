@@ -29,7 +29,7 @@ Generic API clients are reactive. They show you a status code and leave you to g
 PostSense is a single-folder, vanilla JS project. No `npm install`, no heavy dependencies.
 
 ### 1. Simple Access (No Setup)
-Open the **[Live Demo](https://tkwind.github.io/BetterMan/)** and start debugging instantly.
+Open the **[Live Demo](https://tkwind.github.io/PostSense/)** and start debugging instantly.
 
 ### 2. Local Setup
 1. Clone the repo.
